@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=learning_db
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 30s
+
+  app:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   target: development
+    image: dheeraj1429/learning-docker:0.1
+    ports:
+      - 3000:3000
+    environment:
+      - PORT=3000
+      - MYSQL_HOST=db
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=learning_db
+    depends_on:
+      db:
+        condition: service_healthy

@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-app-config
+data:
+  PORT: "3000"
+  S3_ENDPOINT: http://storage-service:9000
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-app-secret
+type: Opaque
+data:
+  S3_ACCESS_KEY: bWluaW9fYWRtaW4=
+  S3_SECRET_ACCESS_KEY: bWluaW9fcGFzc3dvcmQ=
+  S3_REGION: YXAtc291dGgtMQ==
+  S3_BUCKET_NAME: bXktYnVja2V0
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-deployment
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: my-app
+
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: my-app-container
+          image: dheeraj1429/learning-k8s:0.1
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: my-app-config
+                  key: PORT
+            - name: S3_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: my-app-config
+                  key: S3_ENDPOINT
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-app-secret
+                  key: S3_ACCESS_KEY
+            - name: S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-app-secret
+                  key: S3_SECRET_ACCESS_KEY
+            - name: S3_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: my-app-secret
+                  key: S3_REGION
+            - name: S3_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: my-app-secret
+                  key: S3_BUCKET_NAME
+          ports:
+            - containerPort: 3000
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+spec:
+  selector:
+    app: my-app
+  ports:
+    - name: 'my-app-external-port'
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+  type: LoadBalancer

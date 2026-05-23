@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: storage-secret
+type: Opaque
+data:
+  MINIO_ROOT_USER: bWluaW9fYWRtaW4=
+  MINIO_ROOT_PASSWORD: bWluaW9fcGFzc3dvcmQ=
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-deployment
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: storage
+
+  template:
+    metadata:
+      labels:
+        app: storage
+    spec:
+      containers:
+        - name: storage-container
+          image: quay.io/minio/minio
+          imagePullPolicy: Always
+          args:
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: storage-secret
+                  key: MINIO_ROOT_USER
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: storage-secret
+                  key: MINIO_ROOT_PASSWORD
+          ports:
+            - containerPort: 9000
+            - containerPort: 9001
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage-service
+spec:
+  selector:
+    app: storage
+  ports:
+    - name: "internal-connection-port"
+      protocol: TCP
+      port: 9000
+      targetPort: 9000
+    - name: "web-url-port"
+      protocol: TCP
+      port: 9001
+      targetPort: 9001
+  type: LoadBalancer

@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-app-config
+data:
+  PORT: "3000"
+  MYSQL_HOST: db-service
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-app-secrets
+type: Opaque
+data:
+  MYSQL_PORT: MzMwNg==
+  MYSQL_DATABASE: bGVhcm5pbmdfZGI=
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-deployment
+  labels:
+    app: my-app
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: my-app
+
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: my-app
+          image: dheeraj1429/learning-docker:0.2
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: my-app-config
+                  key: PORT
+            - name: MYSQL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: my-app-config
+                  key: MYSQL_HOST
+            - name: MYSQL_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: my-app-secrets
+                  key: MYSQL_PORT
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: my-app-secrets
+                  key: MYSQL_DATABASE
+          ports:
+            - containerPort: 3000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+spec:
+  selector:
+    app: my-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: LoadBalancer

@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  seq:
+    image: datalust/seq:latest
+    container_name: seq_container
+    ports:
+      - 5341:80
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=y
+      - SEQ_PASSWORD=seq_password
+
+  nginx:
+    image: nginx
+    container_name: nginx_container
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+
+  fluent_bit:
+    image: cr.fluentbit.io/fluent/fluent-bit:latest
+    container_name: fluent_bit
+    ports:
+      - 2020:2020
+    volumes:
+      - ./fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml:ro
+      - nginx_logs:/var/log/nginx:ro
+    command: -c /fluent-bit/etc/fluent-bit.yaml
+    environment:
+      - SEQ_HOST=seq
+      - SEQ_PORT=5341
+      - SEQ_API_KEY=seq_password
+    stdin_open: true
+    tty: true
+    depends_on:
+      nginx:
+        condition: service_started
+      seq:
+        condition: service_started
+
+volumes:
+  nginx_logs:

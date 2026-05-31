@@ -1,0 +1,65 @@
+service:
+  flush: 1
+  log_level: info
+  http_server: true
+  http_listen: 0.0.0.0
+  http_port: 2020
+  hot_reload: on
+
+parsers:
+  - name: nginx_access_log_parser
+    format: regex
+    regex: '^(?<client_ip>\S+) - \[(?<timestamp>[^\]]+)\] (?<method>\S+) (?<path>\S+) (?<protocol>\S+) (?<status>\d+)$'
+    time_key: timestamp
+    time_format: "%d/%b/%Y:%H:%M:%S %z"
+
+pipeline:
+  inputs:
+    - name: tail
+      path: /var/log/nginx/nginx_log.log
+      tag: nginx.access.log
+      read_from_head: false
+
+    - name: tail
+      path: /var/log/nginx/nginx_error.log
+      tag: nginx.error.log
+      read_from_head: false
+
+  filters:
+    - name: parser
+      match: "nginx.access.log"
+      key_name: log
+      parser: nginx_access_log_parser
+      reserve_data: true
+
+    - name: modify
+      match: "nginx.access.log"
+      Rename:
+        - method Method
+        - path Path
+        - status Status
+        - client_ip ClientIP
+        - protocol Protocol
+      Add:
+        - "@t '2026-05-31T18:25:09.000Z'"
+        - "@mt '{ClientIP} {Method} {Path} {Protocol} {Status}'"
+
+  outputs:
+    - name: http
+      match: "nginx.*"
+      host: ${SEQ_HOST}
+      port: ${SEQ_PORT}
+      uri: /api/events/raw?clef
+      header: X-Seq-ApiKey ${SEQ_API_KEY}
+      json_date_key: "@t"
+      json_date_format: iso8601
+      http_method: POST
+      format: json_lines
+
+    - name: stdout
+      match: "nginx.*"
+
+    # - name: file
+    #   match: "*"
+    #   template: '{log}'
+    #   path: /fluent-bit/.data/

@@ -1,0 +1,47 @@
+service:
+  flush: 10
+  grace: 30
+  log_level: info
+  http_server: true
+  http_listen: 0.0.0.0
+  http_port: 2020
+  hot_reload: on
+
+pipeline:
+  inputs:
+    # - name: random
+    #   tag: random_number
+    #   log_level: info
+
+    # - name: health
+    #   host: fluent_bit
+    #   port: 80
+    #   interval_sec: 5
+    #   interval_nsec: 0
+
+    # - name: tail
+    #   path: /var/lib/docker/containers/*/*.log
+    #   read_from_head: true
+    #   multiline.parser: docker
+
+    # - name: http
+    #   listen: 0.0.0.0
+    #   port: 8000
+
+  outputs:
+    - name: stdout
+      match: "*"
+
+    # - name: http
+    #   match: '*'
+    #   host: ${SEQ_HOST}
+    #   port: ${SEQ_PORT}
+    #   uri: /api/events/raw?clef
+    #   header: X-Seq-ApiKey ${SEQ_API_KEY}
+    #   format: json
+
+    # - name: file
+    #   match: "*"
+    #   path: /fluent-bit/output
+    #   file: file.logs
+    #   mkdir: true

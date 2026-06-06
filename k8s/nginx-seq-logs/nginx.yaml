@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+data:
+  SEQ_HOST: seq-service
+  SEQ_PORT: '80'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+
+spec:
+  replicas: 1
+  
+  selector:
+    matchLabels:
+      app: nginx
+
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      volumes:
+        - name: shared-volume
+          emptyDir: {}
+      containers:
+        - name: nginx-container
+          image: dheeraj1429/nginx-logs-learning-image:0.1
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: shared-volume
+              mountPath: /var/log/nginx
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+        - name: fluent-bit-container
+          image: dheeraj1429/nginx-logs-fluent-bit-learning-image:0.9
+          ports:
+            - containerPort: 2020
+          env:
+            - name: SEQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                    name: fluent-bit-config
+                    key: SEQ_HOST
+            - name: SEQ_PORT
+              valueFrom:
+                configMapKeyRef:
+                    name: fluent-bit-config
+                    key: SEQ_PORT
+          volumeMounts:
+            - name: shared-volume
+              mountPath: /var/log/nginx
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+
+spec:
+  selector:
+    app: nginx
+  ports:
+  - name:  external
+    port:  80
+    protocol: TCP
+    targetPort: 80
+  type: LoadBalancer
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: fluent-bit-service
+
+# spec:
+#   selector:
+#     app: fluent-bit
+#   ports:
+#   - name: fluent-bit-service
+#     port: 2020
+#     protocol: TCP
+#     targetPort: 2020
+#   type: ClusterIP

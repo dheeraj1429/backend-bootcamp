@@ -1,0 +1,63 @@
+service:
+  flush: 1
+  grace: 30
+  hot_reload: on
+  http_listen: 0.0.0.0
+  http_port: 2020
+  http_server: true
+  log_level: info
+
+parsers:
+  - name: nginx_access_log_parser
+    format: regex
+    regex: '^(?<client_ip>\S+) - \[(?<timestamp>[^\]]+)\] (?<method>\S+) (?<path>\S+) (?<protocol>\S+) (?<status>\d+)$'
+    time_key: timestamp
+    time_format: "%d/%b/%Y:%H:%M:%S %z"
+
+pipeline:
+  inputs:
+    - name: tail
+      path: /var/log/nginx/nginx_access.log
+      tag: nginx.access.log
+      read_from_head: false
+
+    - name: tail
+      path: /var/log/nginx/nginx_error.log
+      tag: nginx.error.log
+      read_from_head: false
+
+  filters:
+    - name: parser
+      key_name: log
+      match: "nginx.access.log"
+      parser: nginx_access_log_parser
+      reserve_data: true
+
+    - name: modify
+      match: "nginx.*"
+      Rename:
+        - method Method
+        - path Path
+        - protocol Protocol
+        - status Status
+        - client_ip ClientIP
+      Add:
+        - "@mt '{ClientIP} {Method} {Path} {Status}'"
+        - "@mt '2016-06-07T03:44:57.8532799Z'"
+
+  outputs:
+    - name: http
+      match: 'nginx.*'
+      host: ${SEQ_HOST}
+      port: ${SEQ_PORT}
+      http_method: POST
+      uri: /ingest/clef
+      header: X-Seq-ApiKey ${SEQ_API_KEY}
+      format: json_lines
+      json_date_key: '@t'
+      json_date_format: iso8601
+
+    - name: stdout
+      match: "*"
+
+# {"@t":"2026-05-31T18:25:09Z","@mt":"{ClientIP} {Method} {Path} {Status}","ClientIP":"192.168.65.1","Method":"GET","Path":"/","Status":"200"}

@@ -1,0 +1,12 @@
+namespace: nginx-ns
+
+nginxDeployment:
+  app: nginx
+  image: dheeraj1429/k8s-namespace-learning
+  tag: 0.3
+  requests:
+    memory: "250Mi"
+    cpu: "250m"
+  limits:
+    memory: "500Mi"
+    cpu: "500m"

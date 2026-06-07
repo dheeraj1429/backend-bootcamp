@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: {{ .Values.nginxDeployment.app }}
+
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.nginxDeployment.app }}
+    spec:
+      containers:
+        - name: nginx-container
+          image: "{{ .Values.nginxDeployment.image }}:{{ .Values.nginxDeployment.tag }}"
+          resources:
+            requests:
+              memory: {{ .Values.nginxDeployment.requests.memory }}
+              cpu: {{ .Values.nginxDeployment.requests.cpu }}
+            limits:
+              memory: {{ .Values.nginxDeployment.limits.memory }}
+              cpu: {{ .Values.nginxDeployment.limits.cpu }}
+          ports:
+            - containerPort: 80

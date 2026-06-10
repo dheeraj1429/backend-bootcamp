@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql-pod
+  namespace: mysql-ns
+spec:
+  volumes:
+    - name: storage
+      persistentVolumeClaim:
+        claimName: my-pvc
+
+  containers:
+    - name: mysql-container
+      image: mysql:8.0
+      ports:
+        - containerPort: 3306
+      volumeMounts:
+        - name: storage
+          mountPath: /var/lib/mysql
+      env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_ROOT_PASSWORD
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_DATABASE
+      resources:
+        requests:
+          memory: 1Gi
+          cpu: "1"
+        limits:
+          memory: 1Gi
+          cpu: "1"

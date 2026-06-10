@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: mysql-rq
+  namespace: mysql-ns
+spec:
+  hard:
+    requests.cpu: "1"
+    limits.cpu: "1"
+    requests.memory: "2Gi"
+    limits.memory: "2Gi"
+    pods: "1"

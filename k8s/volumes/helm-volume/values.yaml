@@ -1,0 +1,15 @@
+namespace: mysql-ns
+
+persistentVolume:
+  hostPath: "/mnt/data"
+  persistentVolumeReclaimPolicy: Retain
+  accessModes:
+    - ReadWriteOnce
+  storage: 2Gi
+
+pod:
+  imageName: mysql
+  tag: 8.0
+  containerPort: 3360
+  volumeMounts:
+    mountPath: /var/lib/mysql
